@@ -16,10 +16,11 @@ dependencies = [
   "opencv-python",
   "pandas",
   "seaborn>=0.11.0",
-  "spark_dsg@git+https://github.com/MIT-SPARK/Spark-DSG.git@clio",
+  # "spark_dsg@git+https://github.com/MIT-SPARK/Spark-DSG.git@clio",  # Temporarily disabled due to compilation issues
   "tabulate",
   "torch==2.0.1",
   "tqdm",
+  "pytest>=8.4.2",
 ]
 
 [project.optional-dependencies]
