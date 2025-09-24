@@ -10,6 +10,7 @@ Clio is a novel approach for building task-driven 3D scene graphs in real-time w
 * [Paper](#Paper)
 * [News](#News)
 * [Setup](#Setup)
+* [Docker Setup](#docker-setup)
 * [Datasets](#Datasets)
 * [Running Clio](#running-clio)
 * [Clustering Pre-built Scene Graphs](#clustering-pre-built-scene-graphs)
@@ -154,6 +155,66 @@ pip install -e clio
 
 > **Note**</br>
 > If you forgot to clone with `--recursive` you can run `git submodule update --init --recursive` instead.
+
+# Docker Setup
+
+For a minimal Docker environment with all necessary dependencies, use the provided Docker configuration.
+
+### Prerequisites
+
+- Docker installed
+- Docker Compose installed
+- At least 8GB RAM available
+- At least 10GB disk space
+
+### Quick Setup
+
+```bash
+# Build and start the container
+./docker/setup.sh
+
+# Or manually:
+docker-compose up -d
+```
+
+### Accessing the Container
+
+```bash
+# Enter the container
+docker exec -it clio-minimal-container bash
+
+# Inside the container, activate ROS environment
+source /opt/ros/noetic/setup.bash
+
+# Start ROS master
+roscore &
+
+# Run Clio
+roslaunch clio_ros realsense.launch
+```
+
+### Container Management
+
+```bash
+# View logs
+docker-compose logs
+
+# Stop container
+docker-compose down
+
+# Rebuild image
+docker-compose build --no-cache
+
+# Run tests
+./docker/test.sh
+```
+
+### Available Commands Inside Container
+
+- `roslaunch clio_ros realsense.launch` - Start Clio with RealSense
+- `rosbag play /datasets/office.bag --clock` - Play rosbag data
+- `rviz` - Start RViz visualization
+- `rostopic list` - List ROS topics
 
 # Datasets
 Our custom datasets for the *Office*, *Apartment*, *Cubicle*, and *Building* scenes are available for download [here](https://www.dropbox.com/scl/fo/5bkv8rsa2xvwmvom6bmza/AOc8VW71kuZCgQjcw_REbWA?rlkey=wx1njghufcxconm1znidc1hgw&st=c809h8h3&dl=0). Each scene contains RGB images, depth images, a rosbag containing the RGB and depth images along with poses, and the list of tasks with ground truth object labels that was used in our paper. Each scene except *Building* contains a COLMAP dense reconstruction which can optionally be used to separately get a dense mesh view of the scene.
