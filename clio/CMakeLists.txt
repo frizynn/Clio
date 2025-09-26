@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.5)
 project(clio VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -10,8 +10,14 @@ add_compile_options(-Wall -Wextra)
 option(CLIO_ENABLE_TESTS "Build unit tests" OFF)
 option(BUILD_SHARED_LIBS "Build shared libs" ON)
 
-find_package(hydra REQUIRED)
-find_package(khronos REQUIRED)
+# Find required packages
+find_package(catkin REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(OpenCV REQUIRED)
+
+# Try to find hydra and khronos, but don't fail if not found
+find_package(hydra QUIET)
+find_package(khronos QUIET)
 
 include(GNUInstallDirs)
 

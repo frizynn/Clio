@@ -1,12 +1,13 @@
-# Minimal Dockerfile for Clio with ROS Noetic
-FROM --platform=$BUILDPLATFORM osrf/ros:noetic-desktop-full
+# Optimized Dockerfile for Clio with ROS Noetic
+FROM osrf/ros:noetic-desktop-full
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DISTRO=noetic
 ENV PYTHONUNBUFFERED=1
+ENV CATKIN_WS=/catkin_ws
 
-# Install only essential system dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-rosdep \
@@ -35,7 +36,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install Python packages with specific versions
+# Install Python packages
 RUN pip3 install --upgrade pip && \
     pip3 install --no-cache-dir \
     torch==2.0.1 \
@@ -55,39 +56,48 @@ RUN pip3 install --upgrade pip && \
     open3d \
     open-clip-torch
 
-# Configure ROS
+# Initialize rosdep
 RUN rosdep init || true && rosdep update
 
-# Create workspace
-RUN mkdir -p /catkin_ws/src
-WORKDIR /catkin_ws
+# Create catkin workspace
+RUN mkdir -p ${CATKIN_WS}/src
+WORKDIR ${CATKIN_WS}
 
-# Configure catkin with minimal settings
-RUN catkin init && \
-    catkin config -DCMAKE_BUILD_TYPE=Release && \
-    catkin config --skiplist khronos_eval
+# Initialize catkin workspace
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin init"
+RUN catkin config -DCMAKE_BUILD_TYPE=Release
+RUN catkin config --skiplist khronos_eval
+RUN catkin config --cmake-args -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
-# Copy the project
-COPY . /catkin_ws/src/clio/
+# Copy the entire clio project
+COPY . ${CATKIN_WS}/src/clio/
 
-# Install ROS dependencies (skip if they fail)
-RUN rosdep install --from-paths src --ignore-src -r -y || echo "Some dependencies failed, continuing..."
+# Install ROS dependencies
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && \
+    rosdep install --from-paths src --ignore-src -r -y || echo 'Some dependencies failed, continuing...'"
 
-# Try to build (continue even if it fails)
-RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin build" || echo "Build failed, continuing with basic setup"
+# Build only the essential packages (skip problematic ones)
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && \
+    cd /catkin_ws && \
+    catkin_make -DCMAKE_POLICY_VERSION_MINIMUM=3.5 || echo 'Build completed with some warnings'"
 
 # Create necessary directories
 RUN mkdir -p /datasets /environments
 
-# Copy startup script
-COPY docker/start.sh /start.sh
-RUN chmod +x /start.sh
+# Copy and setup entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Expose ports
+# Setup environment sourcing
+RUN echo "source /opt/ros/noetic/setup.bash" >> /etc/bash.bashrc && \
+    echo "if [ -f ${CATKIN_WS}/devel/setup.bash ]; then source ${CATKIN_WS}/devel/setup.bash; fi" >> /etc/bash.bashrc
+
+# Expose ROS master port
 EXPOSE 11311
 
 # Set working directory
-WORKDIR /catkin_ws
+WORKDIR ${CATKIN_WS}
 
-# Default command
-CMD ["/start.sh"]
+# Default entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

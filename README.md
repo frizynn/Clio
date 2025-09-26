@@ -158,7 +158,7 @@ pip install -e clio
 
 # Docker Setup
 
-For a minimal Docker environment with all necessary dependencies, use the provided Docker configuration.
+For a minimal Docker environment with all necessary dependencies, use the provided Docker configuration. This setup is optimized for quick testing and development with the apartment dataset.
 
 ### Prerequisites
 
@@ -170,27 +170,49 @@ For a minimal Docker environment with all necessary dependencies, use the provid
 ### Quick Setup
 
 ```bash
-# Build and start the container
+# Build and start the container (recommended)
 ./docker/setup.sh
 
 # Or manually:
 docker-compose up -d
 ```
 
-### Accessing the Container
+### Testing the Apartment Dataset
 
+The Docker setup is specifically optimized for testing with the apartment dataset. Here's how to use it:
+
+#### 1. Verify Everything Works
+```bash
+# Run comprehensive tests
+./docker/test.sh
+```
+
+#### 2. Access the Container
 ```bash
 # Enter the container
-docker exec -it clio-minimal-container bash
+docker exec -it clio-container bash
+```
 
+#### 3. Run Clio with Apartment Dataset
+```bash
 # Inside the container, activate ROS environment
 source /opt/ros/noetic/setup.bash
+source /catkin_ws/devel/setup.bash
 
 # Start ROS master
 roscore &
 
-# Run Clio
-roslaunch clio_ros realsense.launch
+# Launch Clio with apartment dataset
+roslaunch clio_ros realsense.launch \
+    object_tasks_file:=/datasets/apartment/tasks_apartment.yaml \
+    place_tasks_file:=/datasets/apartment/region_tasks_apartment.yaml
+```
+
+#### 4. Play the Apartment Rosbag
+In another terminal:
+```bash
+# Play the apartment rosbag
+docker exec clio-container bash -c "source /opt/ros/noetic/setup.bash && rosbag play /datasets/apartment/apartment.bag --clock"
 ```
 
 ### Container Management
@@ -202,7 +224,7 @@ docker-compose logs
 # Stop container
 docker-compose down
 
-# Rebuild image
+# Rebuild image (if needed)
 docker-compose build --no-cache
 
 # Run tests
@@ -211,10 +233,39 @@ docker-compose build --no-cache
 
 ### Available Commands Inside Container
 
-- `roslaunch clio_ros realsense.launch` - Start Clio with RealSense
-- `rosbag play /datasets/office.bag --clock` - Play rosbag data
+- `roslaunch clio_ros realsense.launch object_tasks_file:=/datasets/apartment/tasks_apartment.yaml place_tasks_file:=/datasets/apartment/region_tasks_apartment.yaml` - Start Clio with apartment dataset
+- `rosbag play /datasets/apartment/apartment.bag --clock` - Play apartment rosbag data
 - `rviz` - Start RViz visualization
 - `rostopic list` - List ROS topics
+- `rostopic echo /topic_name` - Monitor specific topics
+
+### Docker Features
+
+- **Fast Build**: Optimized Dockerfile that builds only essential components
+- **Generalizable**: Works with any dataset, not hardcoded to specific scenes
+- **Volume Mounts**: Datasets are mounted at `/datasets/` for easy access
+- **Complete Environment**: Includes ROS, Python, OpenCV, PyTorch, and all dependencies
+- **Test Scripts**: Automated verification of functionality
+- **Clean Code**: Professional setup without unnecessary complexity
+
+### Troubleshooting
+
+If you encounter issues:
+
+1. **Container won't start**: Check Docker is running and has enough resources
+2. **Build fails**: Try `docker-compose build --no-cache`
+3. **ROS topics not appearing**: Ensure ROS master is running (`roscore &`)
+4. **Dataset not found**: Verify the apartment dataset is in the `datasets/` directory
+5. **Permission issues**: Check that Docker has proper permissions
+
+### File Structure
+
+The Docker setup includes these key files:
+- `Dockerfile` - Optimized container build
+- `docker-compose.yml` - Container configuration with volume mounts
+- `docker/setup.sh` - Automated setup script
+- `docker/test.sh` - Comprehensive testing script
+- `docker/entrypoint.sh` - Container startup script
 
 # Datasets
 Our custom datasets for the *Office*, *Apartment*, *Cubicle*, and *Building* scenes are available for download [here](https://www.dropbox.com/scl/fo/5bkv8rsa2xvwmvom6bmza/AOc8VW71kuZCgQjcw_REbWA?rlkey=wx1njghufcxconm1znidc1hgw&st=c809h8h3&dl=0). Each scene contains RGB images, depth images, a rosbag containing the RGB and depth images along with poses, and the list of tasks with ground truth object labels that was used in our paper. Each scene except *Building* contains a COLMAP dense reconstruction which can optionally be used to separately get a dense mesh view of the scene.

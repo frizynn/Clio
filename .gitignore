@@ -15,6 +15,9 @@
 *.gch
 *.pch
 
+
+datasets/apartment/
+
 # Compiled Dynamic libraries
 *.so
 *.dylib
