@@ -22,6 +22,27 @@ else
     fi
 fi
 
+# Optional: Start noVNC-based web viewer
+if [ "${ENABLE_NOVNC}" = "true" ] || [ "${ENABLE_NOVNC}" = "1" ]; then
+    echo "Enabling noVNC web viewer (DISPLAY :1)"
+    export DISPLAY=:1
+    # Start a virtual framebuffer X server
+    Xvfb :1 -screen 0 1280x800x24 -ac +extension GLX +render -noreset &
+    # Start a lightweight window manager (optional but recommended)
+    fluxbox >/dev/null 2>&1 &
+    # Start VNC server on the virtual display
+    x11vnc -display :1 -forever -shared -rfbport 5900 -nopw -quiet >/dev/null 2>&1 &
+    # Serve noVNC on port 6080
+    if [ -d "/usr/share/novnc" ]; then
+        websockify --web=/usr/share/novnc/ 6080 localhost:5900 >/dev/null 2>&1 &
+        echo "noVNC available at: http://localhost:6080/vnc.html?autoconnect=1"
+    else
+        echo "noVNC not found at /usr/share/novnc. Ensure 'novnc' is installed."
+    fi
+else
+    echo "noVNC disabled. Using DISPLAY=${DISPLAY:-:0}"
+fi
+
 echo "ROS Environment:"
 echo "   ROS_DISTRO: $ROS_DISTRO"
 echo "   ROS_MASTER_URI: $ROS_MASTER_URI"

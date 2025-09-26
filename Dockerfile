@@ -33,6 +33,14 @@ RUN apt-get update && apt-get install -y \
     python3-pandas \
     python3-seaborn \
     python3-tabulate \
+    x11vnc \
+    xvfb \
+    fluxbox \
+    novnc \
+    websockify \
+    x11-apps \
+    libglu1-mesa \
+    mesa-utils \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -94,6 +102,8 @@ RUN echo "source /opt/ros/noetic/setup.bash" >> /etc/bash.bashrc && \
 
 # Expose ROS master port
 EXPOSE 11311
+# Expose noVNC web port
+EXPOSE 6080
 
 # Set working directory
 WORKDIR ${CATKIN_WS}
