@@ -167,6 +167,34 @@ For a minimal Docker environment with all necessary dependencies, use the provid
 - At least 8GB RAM available
 - At least 10GB disk space
 
+### GUI Access Requirements
+
+**For macOS users:** To access Clio's 3D visualization interface (RViz), you need XQuartz:
+
+1. **Install XQuartz:**
+   - Download from: https://www.xquartz.org/
+   - Install the `.pkg` file
+   - **Restart your Mac** (required)
+
+2. **Configure XQuartz:**
+   ```bash
+   # Set display variable
+   export DISPLAY=:0
+   
+   # Allow Docker to access XQuartz
+   xhost +localhost
+   ```
+
+3. **Restart Docker container:**
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+**For Linux users:** X11 forwarding should work out of the box.
+
+**Note:** Without XQuartz (macOS) or X11 (Linux), you can still use Clio's command-line interface and process data, but you won't see the 3D visualization.
+
 ### Quick Setup
 
 ```bash
@@ -215,6 +243,41 @@ In another terminal:
 docker exec clio-container bash -c "source /opt/ros/noetic/setup.bash && rosbag play /datasets/apartment/apartment.bag --clock"
 ```
 
+### User Interface and Visualization
+
+Clio provides multiple interfaces for interaction and visualization:
+
+#### 3D Visualization Interface (RViz)
+- **What you'll see:** Real-time 3D visualization of the apartment environment
+- **Features:**
+  - Objects identified as 3D bounding boxes
+  - Semantic regions (e.g., "Kitchenette", "Workspace")
+  - Interactive 3D scene graph
+  - Real-time clustering visualization
+- **Access:** RViz opens automatically when you launch Clio (requires XQuartz on macOS)
+
+#### Command Line Interface
+- **ROS Topics:** Monitor data streams and system status
+  ```bash
+  # List all active topics
+  rostopic list
+  
+  # Monitor specific data
+  rostopic echo /clio_visualizer/dsg_markers
+  rostopic echo /task_server/objects
+  ```
+- **System Monitoring:** Check Clio's processing status and performance
+
+#### Offline Visualization
+- **Static 3D Visualizations:** Generate 3D plots of clustering results
+- **Object Detection Results:** Visualize bounding boxes and semantic regions
+- **Scene Graph Analysis:** Explore the hierarchical structure of detected objects
+
+#### Interface Requirements
+- **GUI Access:** Requires XQuartz (macOS) or X11 (Linux) for RViz
+- **Command Line:** Works without GUI requirements
+- **Web Interface:** Not available (Clio uses ROS-based visualization)
+
 ### Container Management
 
 ```bash
@@ -233,11 +296,25 @@ docker-compose build --no-cache
 
 ### Available Commands Inside Container
 
+#### Core Clio Commands
 - `roslaunch clio_ros realsense.launch object_tasks_file:=/datasets/apartment/tasks_apartment.yaml place_tasks_file:=/datasets/apartment/region_tasks_apartment.yaml` - Start Clio with apartment dataset
 - `rosbag play /datasets/apartment/apartment.bag --clock` - Play apartment rosbag data
-- `rviz` - Start RViz visualization
-- `rostopic list` - List ROS topics
-- `rostopic echo /topic_name` - Monitor specific topics
+
+#### Visualization Commands
+- `rviz` - Start RViz 3D visualization (requires XQuartz on macOS)
+- `rviz -d /catkin_ws/src/clio/clio_ros/rviz/default.rviz` - Start RViz with Clio configuration
+
+#### Monitoring Commands
+- `rostopic list` - List all active ROS topics
+- `rostopic echo /clio_visualizer/dsg_markers` - Monitor 3D scene graph markers
+- `rostopic echo /task_server/objects` - Monitor object detection results
+- `rostopic echo /task_server/places` - Monitor place/region detection results
+- `rostopic info /topic_name` - Get detailed information about a topic
+
+#### System Commands
+- `roscore` - Start ROS master (if not already running)
+- `rosnode list` - List all running ROS nodes
+- `rosnode info /node_name` - Get information about a specific node
 
 ### Docker Features
 
@@ -257,6 +334,29 @@ If you encounter issues:
 3. **ROS topics not appearing**: Ensure ROS master is running (`roscore &`)
 4. **Dataset not found**: Verify the apartment dataset is in the `datasets/` directory
 5. **Permission issues**: Check that Docker has proper permissions
+
+#### GUI/Visualization Issues
+
+**macOS - RViz not opening:**
+- Ensure XQuartz is installed and you've restarted your Mac
+- Check DISPLAY variable: `echo $DISPLAY` (should show `:0`)
+- Allow Docker access: `xhost +localhost`
+- Restart container: `docker-compose down && docker-compose up -d`
+
+**Linux - X11 forwarding issues:**
+- Check X11 forwarding: `echo $DISPLAY`
+- Ensure X11 is running: `ps aux | grep X`
+- Try: `xhost +local:docker`
+
+**"the input device is not a TTY" error:**
+- This is normal when running commands in background
+- Use `docker exec -it clio-container bash` for interactive access
+- For GUI apps, ensure XQuartz/X11 is properly configured
+
+**RViz opens but shows blank screen:**
+- Wait for data to load (rosbag needs to be playing)
+- Check ROS topics: `rostopic list`
+- Verify Clio is running: `rosnode list`
 
 ### File Structure
 
